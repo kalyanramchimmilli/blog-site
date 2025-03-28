@@ -78,55 +78,15 @@ logoutBtn.addEventListener('click', () => {
     checkAuth();
 });
 
-// Toggle new post form with animation
+// Toggle new post form
 newPostBtn.addEventListener('click', () => {
-    if (createPostSection.classList.contains('hidden')) {
-        createPostSection.classList.remove('hidden');
-        createPostSection.style.opacity = '0';
-        createPostSection.style.transform = 'translateY(20px)';
-        
-        // Trigger animation after revealing
-        setTimeout(() => {
-            createPostSection.style.transition = 'all 0.5s ease-out';
-            createPostSection.style.opacity = '1';
-            createPostSection.style.transform = 'translateY(0)';
-        }, 10);
-    } else {
-        // Animate out
-        createPostSection.style.opacity = '0';
-        createPostSection.style.transform = 'translateY(20px)';
-        
-        // Hide after animation
-        setTimeout(() => {
-            createPostSection.classList.add('hidden');
-        }, 500);
-    }
+    createPostSection.classList.toggle('hidden');
     githubSetupSection.classList.add('hidden');
 });
 
-// Toggle GitHub setup with animation
+// Toggle GitHub setup
 toggleGithubSetup.addEventListener('click', () => {
-    if (githubSetupSection.classList.contains('hidden')) {
-        githubSetupSection.classList.remove('hidden');
-        githubSetupSection.style.opacity = '0';
-        githubSetupSection.style.transform = 'translateY(20px)';
-        
-        // Trigger animation after revealing
-        setTimeout(() => {
-            githubSetupSection.style.transition = 'all 0.5s ease-out';
-            githubSetupSection.style.opacity = '1';
-            githubSetupSection.style.transform = 'translateY(0)';
-        }, 10);
-    } else {
-        // Animate out
-        githubSetupSection.style.opacity = '0';
-        githubSetupSection.style.transform = 'translateY(20px)';
-        
-        // Hide after animation
-        setTimeout(() => {
-            githubSetupSection.classList.add('hidden');
-        }, 500);
-    }
+    githubSetupSection.classList.toggle('hidden');
     createPostSection.classList.add('hidden');
 });
 
@@ -221,24 +181,6 @@ async function verifyGitHubConnection() {
     }
 }
 
-// Image preview
-const postImage = document.getElementById('postImage');
-const imagePreview = document.getElementById('imagePreview');
-
-postImage.addEventListener('change', function() {
-    const file = this.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            imagePreview.src = e.target.result;
-            imagePreview.style.display = 'block';
-        }
-        reader.readAsDataURL(file);
-    } else {
-        imagePreview.style.display = 'none';
-    }
-});
-
 // Create new post
 postForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -247,24 +189,12 @@ postForm.addEventListener('submit', async (e) => {
     const content = document.getElementById('postContent').value;
     const author = document.getElementById('author').value;
     const date = new Date().toISOString();
-    let imageData = null;
-    
-    // Process image if uploaded
-    const imageFile = document.getElementById('postImage').files[0];
-    if (imageFile) {
-        const reader = new FileReader();
-        imageData = await new Promise((resolve) => {
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsDataURL(imageFile);
-        });
-    }
     
     const newPost = {
         title,
         content,
         date,
-        author,
-        imageData
+        author
     };
     
     // Add loading spinner to publish button
@@ -405,109 +335,61 @@ function formatDate(dateString) {
 
 // Load and display posts
 async function loadPosts(forceGitHubSync = false) {
-    // Show loader while posts are loading
-    const postsLoader = document.getElementById('postsLoader');
-    const postsList = document.getElementById('postsList');
+    // If GitHub is connected and force sync is requested, load from GitHub
+    if (githubConnected && forceGitHubSync) {
+        const success = await loadPostsFromGitHub();
+        if (!success) {
+            console.log('Failed to load posts from GitHub, using local posts');
+        }
+    }
     
-    postsLoader.style.display = 'flex';
+    // Try to load posts from external JS if available
+    if (typeof BLOG_POSTS !== 'undefined') {
+        localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
+    }
+    
+    const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
+    
+    if (posts.length === 0) {
+        postsList.innerHTML = '<p>No posts yet. Be the first to share your feelings!</p>';
+        return;
+    }
+    
     postsList.innerHTML = '';
     
-    try {
-        // If GitHub is connected and force sync is requested, load from GitHub
-        if (githubConnected && forceGitHubSync) {
-            const success = await loadPostsFromGitHub();
-            if (!success) {
-                console.log('Failed to load posts from GitHub, using local posts');
-            }
-        }
+    posts.forEach(post => {
+        const formattedDate = formatDate(post.date);
         
-        // Try to load posts from external JS if available
-        if (typeof BLOG_POSTS !== 'undefined') {
-            localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
-        }
-        
-        const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
-        
-        // Hide loader
-        postsLoader.style.display = 'none';
-        
-        if (posts.length === 0) {
-            postsList.innerHTML = '<p>No posts yet. Be the first to share your feelings!</p>';
-            return;
-        }
-        
-        posts.forEach((post, index) => {
-            const formattedDate = formatDate(post.date);
-            
-            const postElement = document.createElement('div');
-            postElement.className = 'post';
-            postElement.style.animationDelay = `${index * 0.1}s`;
-            
-            let imageHtml = '';
-            if (post.imageData) {
-                imageHtml = `<img src="${post.imageData}" alt="${post.title}" class="post-image" onclick="openImageModal(this.src)">`;
-            }
-            
-            postElement.innerHTML = `
-                <div class="post-header">
-                    <h3 class="post-title">${post.title}</h3>
-                    <div class="post-meta">
-                        <span>By: ${post.author || 'Anonymous'}</span>
-                        <span>${formattedDate}</span>
-                    </div>
+        const postElement = document.createElement('div');
+        postElement.className = 'post';
+        postElement.innerHTML = `
+            <div class="post-header">
+                <h3 class="post-title">${post.title}</h3>
+                <div class="post-meta">
+                    <span>By: ${post.author || 'Anonymous'}</span>
+                    <span>${formattedDate}</span>
                 </div>
-                ${imageHtml}
-                <div class="post-content">${post.content}</div>
-            `;
-            
-            postsList.appendChild(postElement);
-        });
-    } catch (error) {
-        console.error('Error loading posts:', error);
-        postsLoader.style.display = 'none';
-        postsList.innerHTML = '<p>Error loading posts. Please try refreshing the page.</p>';
-    }
+            </div>
+            <div class="post-content">${post.content}</div>
+        `;
+        
+        postsList.appendChild(postElement);
+    });
 }
 
-
-// Image modal functions
-const modal = document.getElementById('imageModal');
-const modalImg = document.getElementById('modalImg');
-const closeBtn = document.getElementsByClassName('close')[0];
-
-// Global function to open the modal
-window.openImageModal = function(imgSrc) {
-    modal.style.display = 'block';
-    modalImg.src = imgSrc;
-    // Add a small delay before adding the show class for the animation
-    setTimeout(() => {
-        modal.classList.add('show');
-    }, 10);
+// Check for external posts.js file
+function loadExternalPosts() {
+    const script = document.createElement('script');
+    script.src = 'posts.js';
+    script.onerror = () => {
+        console.log('No external posts.js file found');
+    };
+    script.onload = () => {
+        loadPosts();
+    };
+    document.head.appendChild(script);
 }
-
-// Close the modal
-closeBtn.onclick = function() {
-    modal.classList.remove('show');
-    setTimeout(() => {
-        modal.style.display = 'none';
-    }, 300); // Match the transition time
-}
-
-// Close when clicking outside the image
-window.onclick = function(event) {
-    if (event.target == modal) {
-        modal.classList.remove('show');
-        setTimeout(() => {
-            modal.style.display = 'none';
-        }, 300); // Match the transition time
-    }
-}
-
-// Reset image when form is reset
-postForm.addEventListener('reset', () => {
-    imagePreview.style.display = 'none';
-    imagePreview.src = '';
-});
 
 // Initialize
+loadExternalPosts();
 checkAuth();
