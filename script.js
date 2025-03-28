@@ -1,4 +1,4 @@
-const PASSWORD_HASH = "ab693c98a3ba1425b3684191c6f35efd7bfb49e2b2d3f1d6d8dfe04df8624b66";
+const PASSWORD_HASH = "a7a46eb492933bdf266181327d9baa4daf02fb7a700337d851ccc4faf94efd8f";
 
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
