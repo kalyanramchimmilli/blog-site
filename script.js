@@ -1,4 +1,6 @@
-const PASSWORD_HASH = "5c29a959abce4eda5f0e7a4e7ea53dce4fa0f0abbe8eaa63717e2fed5f193d31";
+const USE_PASSWORD_HASH = true;
+const PASSWORD_HASH = "ab693c98a3ba1425b3684191c6f35efd7bfb49e2b2d3f1d6d8dfe04df8624b66";
+
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
 const blogSection = document.getElementById('blogSection');
@@ -19,6 +21,9 @@ const setupHelp = document.getElementById('setupHelp');
 const githubStatus = document.getElementById('githubStatus');
 const publishBtn = document.getElementById('publishBtn');
 
+// Default empty blog posts array
+let BLOG_POSTS = [];
+
 // GitHub info
 let githubConnected = false;
 let githubUsername = '';
@@ -37,17 +42,33 @@ function checkAuth() {
     }
 }
 
-// Login handler
+// Login handler with optional password hashing
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const password = document.getElementById('password').value;
     
-    // Hash the password input
-    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    let passwordMatches = false;
     
-    if (hashHex === PASSWORD_HASH) {
+    if (USE_PASSWORD_HASH) {
+        // Using secure hash comparison
+        try {
+            // Hash the password input
+            const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            passwordMatches = (hashHex === PASSWORD_HASH);
+        } catch (error) {
+            console.error('Error hashing password:', error);
+            // Fallback to plain text if hashing fails
+            passwordMatches = (password === PLAIN_PASSWORD);
+        }
+    } else {
+        // Using plain text comparison
+        passwordMatches = (password === PLAIN_PASSWORD);
+    }
+    
+    if (passwordMatches) {
         localStorage.setItem('blogAuth', 'true');
         loginMsg.classList.add('hidden');
         checkAuth();
@@ -342,11 +363,7 @@ async function loadPosts(forceGitHubSync = false) {
         }
     }
     
-    // Try to load posts from external JS if available
-    if (typeof BLOG_POSTS !== 'undefined') {
-        localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
-    }
-    
+    // Get posts from localStorage
     const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
     
     if (posts.length === 0) {
@@ -376,5 +393,5 @@ async function loadPosts(forceGitHubSync = false) {
     });
 }
 
-// Initialize
+// Initialize the blog
 checkAuth();
