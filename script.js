@@ -405,54 +405,70 @@ function formatDate(dateString) {
 
 // Load and display posts
 async function loadPosts(forceGitHubSync = false) {
-    // If GitHub is connected and force sync is requested, load from GitHub
-    if (githubConnected && forceGitHubSync) {
-        const success = await loadPostsFromGitHub();
-        if (!success) {
-            console.log('Failed to load posts from GitHub, using local posts');
-        }
-    }
+    // Show loader while posts are loading
+    const postsLoader = document.getElementById('postsLoader');
+    const postsList = document.getElementById('postsList');
     
-    // Try to load posts from external JS if available
-    if (typeof BLOG_POSTS !== 'undefined') {
-        localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
-    }
-    
-    const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
-    
-    if (posts.length === 0) {
-        postsList.innerHTML = '<p>No posts yet. Be the first to share your feelings!</p>';
-        return;
-    }
-    
+    postsLoader.style.display = 'flex';
     postsList.innerHTML = '';
     
-    posts.forEach(post => {
-        const formattedDate = formatDate(post.date);
-        
-        const postElement = document.createElement('div');
-        postElement.className = 'post';
-        
-        let imageHtml = '';
-        if (post.imageData) {
-            imageHtml = `<img src="${post.imageData}" alt="${post.title}" class="post-image" onclick="openImageModal(this.src)">`;
+    try {
+        // If GitHub is connected and force sync is requested, load from GitHub
+        if (githubConnected && forceGitHubSync) {
+            const success = await loadPostsFromGitHub();
+            if (!success) {
+                console.log('Failed to load posts from GitHub, using local posts');
+            }
         }
         
-        postElement.innerHTML = `
-            <div class="post-header">
-                <h3 class="post-title">${post.title}</h3>
-                <div class="post-meta">
-                    <span>By: ${post.author || 'Anonymous'}</span>
-                    <span>${formattedDate}</span>
-                </div>
-            </div>
-            ${imageHtml}
-            <div class="post-content">${post.content}</div>
-        `;
+        // Try to load posts from external JS if available
+        if (typeof BLOG_POSTS !== 'undefined') {
+            localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
+        }
         
-        postsList.appendChild(postElement);
-    });
+        const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
+        
+        // Hide loader
+        postsLoader.style.display = 'none';
+        
+        if (posts.length === 0) {
+            postsList.innerHTML = '<p>No posts yet. Be the first to share your feelings!</p>';
+            return;
+        }
+        
+        posts.forEach((post, index) => {
+            const formattedDate = formatDate(post.date);
+            
+            const postElement = document.createElement('div');
+            postElement.className = 'post';
+            postElement.style.animationDelay = `${index * 0.1}s`;
+            
+            let imageHtml = '';
+            if (post.imageData) {
+                imageHtml = `<img src="${post.imageData}" alt="${post.title}" class="post-image" onclick="openImageModal(this.src)">`;
+            }
+            
+            postElement.innerHTML = `
+                <div class="post-header">
+                    <h3 class="post-title">${post.title}</h3>
+                    <div class="post-meta">
+                        <span>By: ${post.author || 'Anonymous'}</span>
+                        <span>${formattedDate}</span>
+                    </div>
+                </div>
+                ${imageHtml}
+                <div class="post-content">${post.content}</div>
+            `;
+            
+            postsList.appendChild(postElement);
+        });
+    } catch (error) {
+        console.error('Error loading posts:', error);
+        postsLoader.style.display = 'none';
+        postsList.innerHTML = '<p>Error loading posts. Please try refreshing the page.</p>';
+    }
 }
+
 
 // Image modal functions
 const modal = document.getElementById('imageModal');
