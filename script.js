@@ -1,4 +1,4 @@
-const BLOG_PASSWORD = "ooty";
+const PASSWORD_HASH = "ab693c98a3ba1425b3684191c6f35efd7bfb49e2b2d3f1d6d8dfe04df8624b66";
 
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
@@ -39,11 +39,16 @@ function checkAuth() {
 }
 
 // Login handler
-loginForm.addEventListener('submit', (e) => {
+loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const password = document.getElementById('password').value;
     
-    if (password === BLOG_PASSWORD) {
+    // Hash the password input
+    const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(password));
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    
+    if (hashHex === PASSWORD_HASH) {
         localStorage.setItem('blogAuth', 'true');
         loginMsg.classList.add('hidden');
         checkAuth();
@@ -73,15 +78,55 @@ logoutBtn.addEventListener('click', () => {
     checkAuth();
 });
 
-// Toggle new post form
+// Toggle new post form with animation
 newPostBtn.addEventListener('click', () => {
-    createPostSection.classList.toggle('hidden');
+    if (createPostSection.classList.contains('hidden')) {
+        createPostSection.classList.remove('hidden');
+        createPostSection.style.opacity = '0';
+        createPostSection.style.transform = 'translateY(20px)';
+        
+        // Trigger animation after revealing
+        setTimeout(() => {
+            createPostSection.style.transition = 'all 0.5s ease-out';
+            createPostSection.style.opacity = '1';
+            createPostSection.style.transform = 'translateY(0)';
+        }, 10);
+    } else {
+        // Animate out
+        createPostSection.style.opacity = '0';
+        createPostSection.style.transform = 'translateY(20px)';
+        
+        // Hide after animation
+        setTimeout(() => {
+            createPostSection.classList.add('hidden');
+        }, 500);
+    }
     githubSetupSection.classList.add('hidden');
 });
 
-// Toggle GitHub setup
+// Toggle GitHub setup with animation
 toggleGithubSetup.addEventListener('click', () => {
-    githubSetupSection.classList.toggle('hidden');
+    if (githubSetupSection.classList.contains('hidden')) {
+        githubSetupSection.classList.remove('hidden');
+        githubSetupSection.style.opacity = '0';
+        githubSetupSection.style.transform = 'translateY(20px)';
+        
+        // Trigger animation after revealing
+        setTimeout(() => {
+            githubSetupSection.style.transition = 'all 0.5s ease-out';
+            githubSetupSection.style.opacity = '1';
+            githubSetupSection.style.transform = 'translateY(0)';
+        }, 10);
+    } else {
+        // Animate out
+        githubSetupSection.style.opacity = '0';
+        githubSetupSection.style.transform = 'translateY(20px)';
+        
+        // Hide after animation
+        setTimeout(() => {
+            githubSetupSection.classList.add('hidden');
+        }, 500);
+    }
     createPostSection.classList.add('hidden');
 });
 
@@ -176,6 +221,24 @@ async function verifyGitHubConnection() {
     }
 }
 
+// Image preview
+const postImage = document.getElementById('postImage');
+const imagePreview = document.getElementById('imagePreview');
+
+postImage.addEventListener('change', function() {
+    const file = this.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.src = e.target.result;
+            imagePreview.style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+    } else {
+        imagePreview.style.display = 'none';
+    }
+});
+
 // Create new post
 postForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -184,12 +247,24 @@ postForm.addEventListener('submit', async (e) => {
     const content = document.getElementById('postContent').value;
     const author = document.getElementById('author').value;
     const date = new Date().toISOString();
+    let imageData = null;
+    
+    // Process image if uploaded
+    const imageFile = document.getElementById('postImage').files[0];
+    if (imageFile) {
+        const reader = new FileReader();
+        imageData = await new Promise((resolve) => {
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsDataURL(imageFile);
+        });
+    }
     
     const newPost = {
         title,
         content,
         date,
-        author
+        author,
+        imageData
     };
     
     // Add loading spinner to publish button
@@ -357,6 +432,12 @@ async function loadPosts(forceGitHubSync = false) {
         
         const postElement = document.createElement('div');
         postElement.className = 'post';
+        
+        let imageHtml = '';
+        if (post.imageData) {
+            imageHtml = `<img src="${post.imageData}" alt="${post.title}" class="post-image" onclick="openImageModal(this.src)">`;
+        }
+        
         postElement.innerHTML = `
             <div class="post-header">
                 <h3 class="post-title">${post.title}</h3>
@@ -365,12 +446,52 @@ async function loadPosts(forceGitHubSync = false) {
                     <span>${formattedDate}</span>
                 </div>
             </div>
+            ${imageHtml}
             <div class="post-content">${post.content}</div>
         `;
         
         postsList.appendChild(postElement);
     });
 }
+
+// Image modal functions
+const modal = document.getElementById('imageModal');
+const modalImg = document.getElementById('modalImg');
+const closeBtn = document.getElementsByClassName('close')[0];
+
+// Global function to open the modal
+window.openImageModal = function(imgSrc) {
+    modal.style.display = 'block';
+    modalImg.src = imgSrc;
+    // Add a small delay before adding the show class for the animation
+    setTimeout(() => {
+        modal.classList.add('show');
+    }, 10);
+}
+
+// Close the modal
+closeBtn.onclick = function() {
+    modal.classList.remove('show');
+    setTimeout(() => {
+        modal.style.display = 'none';
+    }, 300); // Match the transition time
+}
+
+// Close when clicking outside the image
+window.onclick = function(event) {
+    if (event.target == modal) {
+        modal.classList.remove('show');
+        setTimeout(() => {
+            modal.style.display = 'none';
+        }, 300); // Match the transition time
+    }
+}
+
+// Reset image when form is reset
+postForm.addEventListener('reset', () => {
+    imagePreview.style.display = 'none';
+    imagePreview.src = '';
+});
 
 // Initialize
 checkAuth();
