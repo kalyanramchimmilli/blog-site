@@ -1,4 +1,4 @@
-const PASSWORD_HASH = "a7a46eb492933bdf266181327d9baa4daf02fb7a700337d851ccc4faf94efd8f";
+const PASSWORD_HASH = "ab693c98a3ba1425b3684191c6f35efd7bfb49e2b2d3f1d6d8dfe04df8624b66";
 
 // DOM Elements
 const loginSection = document.getElementById('loginSection');
@@ -20,9 +20,6 @@ const setupHelp = document.getElementById('setupHelp');
 const githubStatus = document.getElementById('githubStatus');
 const publishBtn = document.getElementById('publishBtn');
 
-// Default empty blog posts array
-let BLOG_POSTS = [];
-
 // GitHub info
 let githubConnected = false;
 let githubUsername = '';
@@ -41,7 +38,7 @@ function checkAuth() {
     }
 }
 
-// Login handler with password hashing
+// Login handler
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const password = document.getElementById('password').value;
@@ -346,7 +343,11 @@ async function loadPosts(forceGitHubSync = false) {
         }
     }
     
-    // Get posts from localStorage
+    // Try to load posts from external JS if available
+    if (typeof BLOG_POSTS !== 'undefined') {
+        localStorage.setItem('blogPosts', JSON.stringify(BLOG_POSTS));
+    }
+    
     const posts = JSON.parse(localStorage.getItem('blogPosts') || '[]');
     
     if (posts.length === 0) {
@@ -376,5 +377,5 @@ async function loadPosts(forceGitHubSync = false) {
     });
 }
 
-// Initialize the blog
+// Initialize
 checkAuth();
