@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Our Minimal Blog</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Our Minimal Blog</h1>
+            <p>A place for us to document how we feel</p>
+        </header>
+
+        <div id="loginSection" class="login-container">
+            <h2>Login</h2>
+            <div id="loginMsg" class="msg hidden"></div>
+            <form id="loginForm" class="auth-form">
+                <input type="password" id="password" placeholder="Enter password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+
+        <div id="blogSection" class="blog-container hidden">
+            <div class="control-panel">
+                <button id="newPostBtn">Write New Post</button>
+                <button id="syncBtn" class="hidden">Sync Posts</button>
+                <button id="logoutBtn" class="secondary-button">Logout</button>
+                <span id="githubStatus" class="status-badge status-disconnected">GitHub: Not Connected</span>
+            </div>
+            
+            <div id="createPostSection" class="create-post-container hidden">
+                <h2>Create New Post</h2>
+                <div id="postMsg" class="msg hidden"></div>
+                <form id="postForm" class="auth-form">
+                    <input type="text" id="postTitle" placeholder="Post Title" required>
+                    <input type="text" id="author" placeholder="Your Name" required>
+                    <textarea id="postContent" placeholder="Write your feelings here..." required></textarea>
+                    <button type="submit" id="publishBtn">Publish Post</button>
+                </form>
+            </div>
+
+            <div id="githubSetupSection" class="github-setup-container hidden">
+                <h2>Connect to GitHub <span class="toggle-setup" id="toggleSetupHelp">(Show Help)</span></h2>
+                <div id="setupHelp" class="hidden">
+                    <p>To automatically save posts to GitHub, you need to:</p>
+                    <ol>
+                        <li>Create a GitHub repository (if you haven't already)</li>
+                        <li>Create a personal access token with "repo" permissions:
+                            <ul>
+                                <li>Go to GitHub → Settings → Developer settings → Personal access tokens → Generate new token</li>
+                                <li>Give it a name like "Blog Token" and select "repo" permissions</li>
+                                <li>Copy the generated token and paste it below</li>
+                            </ul>
+                        </li>
+                    </ol>
+                </div>
+                <form id="githubForm" class="github-form">
+                    <input type="text" id="githubUsername" placeholder="GitHub Username" required>
+                    <input type="text" id="githubRepo" placeholder="Repository Name" required>
+                    <input type="password" id="githubToken" placeholder="Personal Access Token" required>
+                    <button type="submit">Connect to GitHub</button>
+                </form>
+            </div>
+
+            <div id="postsSection">
+                <h2>Latest Posts <span class="toggle-setup" id="toggleGithubSetup">Configure GitHub Auto-Save</span></h2>
+                <div id="postsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="posts.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
